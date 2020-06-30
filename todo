@@ -23,9 +23,6 @@ class Tasks:
         return tasks
 
     def display(self, show_id=False):
-        ascii_banner = pyfiglet.figlet_format("ToDo List")
-        print(ascii_banner)
-
         # keep track of previous day for output formatting
         prev_day = 0
         for id, task in self.tasks.items():
@@ -100,6 +97,9 @@ def help():
     print(statement)
 
 def main():
+    ascii_banner = pyfiglet.figlet_format("ToDo List")
+    print(ascii_banner)
+
     # parse arguments
     args = sys.argv
 
