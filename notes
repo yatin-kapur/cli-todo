@@ -1,0 +1,48 @@
+- create table tasks
+
+task_id primary key auto increment
+task < 150 chars
+finish_by date date time
+completed bool
+
+args:
+- see tasks [no args]
+- see tasks and completed [1 args]
+- add task [args[1] == add, followed by task string, followed by days to finish]
+- mark as completed [args[1] == done followed by task id]
+- delete task [args[1] == remove followed by task id]
+
+view [no args]:
+finish_by - current_date | task string
+
+- design class to interface bw db and user
+
+TASKS:
+list of tasks
+
+methods:
+- load tasks from sql
+
+TASK:
+load task task_id
+task 
+finish_by date
+days left = finish_by - current date
+
+methods:
+- initialize from sql using id
+- write to sql
+- update task text
+- decrement task day
+- increment task day
+- complete task 
+
+CREATE TABLE tasks (
+    id int NOT NULL AUTO_INCREMENT,
+    task varchar(150) NOT NULL,
+    finish_by date NOT NULL,
+    completed BOOLEAN,
+    PRIMARY KEY (id)
+);
+
+- cron job to carry over items from day -1 to day 0
