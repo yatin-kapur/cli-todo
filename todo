@@ -1,28 +1,89 @@
 #!/usr/bin/python3
 
-from task import TaskItem, Tasks
-from cxn import get_cxn
 from datetime import date, timedelta
+import pymysql
 import sys
+from collections import OrderedDict
+
+class Tasks:
+    def __init__(self, rows):
+        self.rows = rows
+        self.tasks = self.initialize_items()
+
+    def initialize_items(self):
+        tasks = OrderedDict()
+        n = len(self.rows)
+        for i, row in enumerate(self.rows):
+            t = TaskItem(row)
+            tasks[t.id] = t
+
+        return tasks
+
+    def display(self, show_id=False):
+        # keep track of previous day for output formatting
+        prev_day = 0
+        for id, task in self.tasks.items():
+            if prev_day != task.days:
+                print()
+                prev_day = task.days
+
+            print(task.show(show_id))
+
+class TaskItem:
+    def __init__(self, data):
+        self.id = data[0]
+        self.task = data[1]
+        self.finish_by = data[2]
+        self.days = (self.finish_by - date.today()).days
+        self.completed = data[3]
+        self.output = self.show()
+
+    def show(self, show_id=False):
+        o = "{:>2} | {:>2} | {}".format(
+                self.id, 
+                self.days, 
+                self.task
+        )
+        output = "{:>4} | {}".format(
+            self.days,
+            self.task
+        )
+
+        if self.completed:
+            output = ''.join([u'\u0336{}'.format(c) for c in output])
+
+        if self.completed:
+            o = ''.join([u'\u0336{}'.format(c) for c in o])
+
+        return o if show_id else output
+
+def get_cxn():
+    # Connect to the database
+    connection = pymysql.connect(host='localhost',
+                                user='root',
+                                password='wplqsym',
+                                db='todo')
+
+    return connection
 
 def help():
-    default = "do"
-    all = 'do all'
-    add = 'do add "[task]" [days]'
-    delete = 'do delete [id]'
-    edit = 'do edit [id] ["task"]'
-    days = 'do days [id] [days]'
-    completed = 'do complete [id]'
-    incomplete = 'do incomplete [id]'
+    default = "todo [id = T/F, F by deafult]"
+    all = 'todo all [n] [id = T/F, F by default]'
+    add = 'todo add "[task]" [days]'
+    delete = 'todo delete [id]'
+    edit = 'todo edit [id] ["task"]'
+    days = 'todo days [id] [days]'
+    completed = 'todo complete [id]'
+    incomplete = 'todo incomplete [id]'
     
-    statement = """{:<25}: displays list of incomplete tasks
-{:<25}: displays all incomplete and complete tasks
-{:<25}: how to add a task to the list
-{:<25}: delete task of given id
-{:<25}: edit task of given id
-{:<25}: reset days of task with given id
-{:<25}: mark task of id as completed
-{:<25}: mark task of id as inccomplete""".format(
+    statement = """{:<40}: displays list of incomplete tasks, choose to show id or not
+{:<40}: displays all incomplete and last n completed tasks by date
+{:<40}: how to add a task to the list
+{:<40}: delete task of given id
+{:<40}: edit task of given id
+{:<40}: reset days of task with given id
+{:<40}: mark task of id as completed
+{:<40}: mark task of id as inccomplete""".format(
                                             default,
                                             all,
                                             add,
@@ -42,7 +103,7 @@ def main():
     cxn = get_cxn()
     cursor = cxn.cursor()
 
-    if len(args) == 1:
+    if len(args) == 1 or (len(args) == 2 and args[-1] in ['T', 'F']):
         cxn = get_cxn()
         cursor = cxn.cursor()
         query = """
@@ -56,9 +117,12 @@ def main():
 
         # initialize tasks list
         tasks = Tasks(rows)
-        tasks.display()
+        if args[-1] == 'T':
+            tasks.display(True)
+        else:
+            tasks.display()
 
-    elif len(args) == 2 and args[1] == 'all':
+    elif args[1] == 'all':
         query = """
                 select id, task, finish_by, completed
                 from tasks 
@@ -69,7 +133,10 @@ def main():
 
         # initialize tasks list
         tasks = Tasks(rows)
-        tasks.display()
+        if args[-1] == 'T':
+            tasks.display(True)
+        else:
+            tasks.display()
     
     elif args[1] == 'add':
         days = args[3]
