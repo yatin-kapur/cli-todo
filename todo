@@ -96,10 +96,11 @@ def help():
 
     print(statement)
 
-def main():
+def welcome():
     ascii_banner = pyfiglet.figlet_format("ToDo List")
     print(ascii_banner)
 
+def main():
     # parse arguments
     args = sys.argv
 
@@ -107,6 +108,7 @@ def main():
     cursor = cxn.cursor()
 
     if len(args) == 1 or (len(args) == 2 and args[-1] == 'id'):
+        welcome()
         cxn = get_cxn()
         cursor = cxn.cursor()
         query = """
@@ -126,6 +128,7 @@ def main():
             tasks.display()
 
     elif args[1] == 'all':
+        welcome()
         query = """
                 select id, task, finish_by, completed
                 from tasks 
