@@ -130,8 +130,21 @@ def main():
     elif args[1] == 'all':
         welcome()
         query = """
-                select id, task, finish_by, completed
-                from tasks 
+                with done as (
+                    select id, task, finish_by, completed
+                    from tasks
+                    where completed = true
+                    order by finish_by desc
+                    limit 10
+                ), 
+                todo as (
+                    select id, task, finish_by, completed
+                    from tasks 
+                    where completed = false
+                )
+                select * from todo
+                union
+                select * from done
                 order by finish_by;
                 """
         cursor.execute(query)
@@ -234,6 +247,7 @@ def main():
         cxn.commit()
     
     elif args[1] == 'help':
+        welcome()
         help()
 
     cxn.close()
