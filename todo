@@ -145,7 +145,7 @@ def main():
                 select * from todo
                 union
                 select * from done
-                order by finish_by;
+                order by completed desc, finish_by;
                 """
         cursor.execute(query)
         rows = cursor.fetchall()
