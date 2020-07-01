@@ -24,10 +24,10 @@ class Tasks:
 
     def display(self, show_id=False):
         # keep track of previous day for output formatting
-        prev_day = -1
+        prev_day = 10
         for id, task in self.tasks.items():
             if prev_day != task.days:
-                if prev_day != -1:
+                if prev_day != 10:
                     print()
                 prev_day = task.days
 
