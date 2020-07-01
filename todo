@@ -22,7 +22,7 @@ class Tasks:
 
         return tasks
 
-    def display(self, show_id=False):
+    def display(self):
         # keep track of previous day for output formatting
         prev_day = 10
         for id, task in self.tasks.items():
@@ -31,7 +31,7 @@ class Tasks:
                     print()
                 prev_day = task.days
 
-            print(task.show(show_id))
+            print(task.show())
 
 class TaskItem:
     def __init__(self, data):
@@ -43,21 +43,16 @@ class TaskItem:
         self.completed = data[3]
         self.output = self.show()
 
-    def show(self, show_id=False):
-        o = "{:>2} | {:<10} | {}".format(
+    def show(self):
+        output = "{:>2} | {:<10} | {}".format(
                 self.id, 
                 self.day_of_week, 
                 self.task
         )
-        output = "{:<10} | {}".format(
-            self.day_of_week,
-            self.task
-        )
 
-        ret_val = o if show_id else output
         color = 'green' if self.completed else 'red'
 
-        return colored(ret_val, color)
+        return colored(output, color)
 
 def get_cxn():
     # Connect to the database
@@ -69,15 +64,15 @@ def get_cxn():
     return connection
 
 def help():
-    default = "todo [id - optional]"
-    all = 'todo all [n] [id - optional]'
+    default = "todo"
+    all = 'todo all [n]'
     add = 'todo add "[task]" [days]'
     delete = 'todo delete [id]'
     edit = 'todo edit [id] ["task"]'
     days = 'todo days [id] [days]'
     completed = 'todo complete [id]'
     incomplete = 'todo incomplete [id]'
-    statement = """{:<40}: displays list of incomplete tasks, choose to show id or not
+    statement = """{:<40}: displays list of incomplete tasks
 {:<40}: displays all incomplete and last n completed tasks by date
 {:<40}: how to add a task to the list
 {:<40}: delete task of given id
@@ -108,7 +103,7 @@ def main():
     cxn = get_cxn()
     cursor = cxn.cursor()
 
-    if len(args) == 1 or (len(args) == 2 and args[-1] == 'id'):
+    if len(args) == 1:
         welcome()
         cxn = get_cxn()
         cursor = cxn.cursor()
@@ -123,20 +118,19 @@ def main():
 
         # initialize tasks list
         tasks = Tasks(rows)
-        if args[-1] == 'id':
-            tasks.display(True)
-        else:
-            tasks.display()
+        tasks.display()
 
     elif args[1] == 'all':
         welcome()
+
+        n = 2 if len(args) == 2 else args[2]
         query = """
                 with done as (
                     select id, task, finish_by, completed
                     from tasks
                     where completed = true
                     order by finish_by desc
-                    limit 10
+                    limit {}
                 ), 
                 todo as (
                     select id, task, finish_by, completed
@@ -147,16 +141,13 @@ def main():
                 union
                 select * from done
                 order by completed desc, finish_by;
-                """
+                """.format(n)
         cursor.execute(query)
         rows = cursor.fetchall()
 
         # initialize tasks list
         tasks = Tasks(rows)
-        if args[-1] == 'id':
-            tasks.display(True)
-        else:
-            tasks.display()
+        tasks.display()
     
     elif args[1] == 'add':
         days = args[3]
