@@ -101,7 +101,6 @@ def clear():
     os.system('clear')
 
 def main():
-    clear()
     # parse arguments
     args = sys.argv
 
@@ -109,6 +108,7 @@ def main():
     cursor = cxn.cursor()
 
     if len(args) == 1:
+        clear()
         welcome()
         cxn = get_cxn()
         cursor = cxn.cursor()
@@ -126,6 +126,7 @@ def main():
         tasks.display()
 
     elif args[1] == 'all':
+        clear()
         welcome()
 
         n = 2 if len(args) == 2 else args[2]
