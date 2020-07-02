@@ -7,6 +7,7 @@ import sys
 from collections import OrderedDict
 import pyfiglet
 from termcolor import colored
+import os
 
 class Tasks:
     def __init__(self, rows):
@@ -96,7 +97,11 @@ def welcome():
     ascii_banner = pyfiglet.figlet_format("ToDo List")
     print(ascii_banner)
 
+def clear():
+    os.system('clear')
+
 def main():
+    clear()
     # parse arguments
     args = sys.argv
 
