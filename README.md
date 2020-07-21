@@ -20,7 +20,7 @@ $ chmod u+x update.sh; bash update.sh
 ```
 
 ## How to Use
-Just run `todo -h`, it's super easy to work with
+Just run `todo --help`, it's super easy to work with
 
 ![example](example.png)
 

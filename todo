@@ -98,8 +98,6 @@ def todo(ctx):
         show(query)
     else:
         pass
-    
-    
 
 @todo.command(help='USAGE: todo all [n]')
 @click.argument('n', required=True)
@@ -158,7 +156,7 @@ def delete(id):
     cursor.execute(query)
     cxn.commit()
 
-@todo.command(help = 'USAGE: todo edit [id] ["task"]')
+@todo.command(help = 'USAGE: todo edit [id] "[task]"')
 @click.argument('task', required=True)
 @click.argument('id', required=True)
 def edit(task, id):
