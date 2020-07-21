@@ -8,6 +8,7 @@ from collections import OrderedDict
 import pyfiglet
 from termcolor import colored
 import os
+import click
 
 class Tasks:
     def __init__(self, rows):
@@ -29,10 +30,10 @@ class Tasks:
         for id, task in self.tasks.items():
             if prev_day != task.days:
                 if prev_day != 10:
-                    print()
+                    click.echo()
                 prev_day = task.days
 
-            print(task.show())
+            click.echo(task.show())
 
 class TaskItem:
     def __init__(self, data):
@@ -64,191 +65,164 @@ def get_cxn():
 
     return connection
 
-def help():
-    default = "todo"
-    all = 'todo all [n]'
-    add = 'todo add "[task]" [days]'
-    delete = 'todo delete [id]'
-    edit = 'todo edit [id] ["task"]'
-    days = 'todo days [id] [days]'
-    completed = 'todo complete [id]'
-    incomplete = 'todo incomplete [id]'
-    statement = """{:<40}: displays list of incomplete tasks
-{:<40}: displays all incomplete and last n completed tasks by date
-{:<40}: how to add a task to the list
-{:<40}: delete task of given id
-{:<40}: edit task of given id
-{:<40}: reset days of task with given id
-{:<40}: mark task of id as completed
-{:<40}: mark task of id as inccomplete""".format(
-                                            default,
-                                            all,
-                                            add,
-                                            delete,
-                                            edit,
-                                            days,
-                                            completed,
-                                            incomplete
-                                        )
-
-    print(statement)
-
 def welcome():
     ascii_banner = pyfiglet.figlet_format("ToDo List")
-    print(ascii_banner)
+    click.echo(ascii_banner)
 
 def clear():
     os.system('clear')
 
-def main():
-    # parse arguments
-    args = sys.argv
-
+def show(query):
+    clear()
+    welcome()
     cxn = get_cxn()
     cursor = cxn.cursor()
 
-    if len(args) == 1:
-        clear()
-        welcome()
-        cxn = get_cxn()
-        cursor = cxn.cursor()
-        query = """
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    # initialize tasks list
+    tasks = Tasks(rows)
+    tasks.display()
+
+@click.group(invoke_without_command=True, help='displays list of incomplete tasks')
+@click.pass_context
+def todo(ctx):
+    query = """
+            select id, task, finish_by, completed
+            from tasks 
+            where completed = false
+            order by finish_by;
+            """
+    if ctx.invoked_subcommand is None:
+        show(query)
+    else:
+        pass
+
+@todo.command(help='USAGE: todo all [n]')
+@click.argument('n', required=True)
+def all(n):
+    query = """
+            with done as (
+                select id, task, finish_by, completed
+                from tasks
+                where completed = true
+                order by finish_by desc
+                limit {}
+            ), 
+            todo as (
                 select id, task, finish_by, completed
                 from tasks 
                 where completed = false
-                order by finish_by;
-                """
-        cursor.execute(query)
-        rows = cursor.fetchall()
+            )
+            select * from todo
+            union
+            select * from done
+            order by completed desc, finish_by;
+            """.format(n)
+    show(query)
 
-        # initialize tasks list
-        tasks = Tasks(rows)
-        tasks.display()
+@todo.command(help = 'USAGE: todo add "[task]" [days]')
+@click.argument('task', required=True)
+@click.argument('days', required=True)
+def add(task, days):
+    cxn = get_cxn()
+    cursor = cxn.cursor()
 
-    elif args[1] == 'all':
-        clear()
-        welcome()
+    query = """
+        insert into 
+        tasks (task, finish_by, completed) 
+        values ('{}', date_add(current_date, interval {} day), 0);
+        """.format(
+            task,
+            days
+        )
 
-        n = 2 if len(args) == 2 else args[2]
-        query = """
-                with done as (
-                    select id, task, finish_by, completed
-                    from tasks
-                    where completed = true
-                    order by finish_by desc
-                    limit {}
-                ), 
-                todo as (
-                    select id, task, finish_by, completed
-                    from tasks 
-                    where completed = false
-                )
-                select * from todo
-                union
-                select * from done
-                order by completed desc, finish_by;
-                """.format(n)
-        cursor.execute(query)
-        rows = cursor.fetchall()
+    cursor.execute(query)
+    cxn.commit()
 
-        # initialize tasks list
-        tasks = Tasks(rows)
-        tasks.display()
-    
-    elif args[1] == 'add':
-        days = args[3]
-        task = args[2]
+@todo.command(help = 'USAGE: todo delete [id]')
+@click.argument('id', required=True)
+def delete(id):
+    cxn = get_cxn()
+    cursor = cxn.cursor()
+    query = """
+            delete from tasks
+            where id = {};
+            """.format(
+                id
+            )
 
-        query = """
-                insert into 
-                tasks (task, finish_by, completed) 
-                values ('{}', date_add(current_date, interval {} day), 0);
-                """.format(
-                    task,
-                    days
-                )
+    cursor.execute(query)
+    cxn.commit()
 
-        cursor.execute(query)
-        cxn.commit()
-    
-    elif args[1] == 'delete':
-        id = args[2]
+@todo.command(help = 'USAGE: todo edit [id] "[task]"')
+@click.argument('task', required=True)
+@click.argument('id', required=True)
+def edit(task, id):
+    cxn = get_cxn()
+    cursor = cxn.cursor()
+    query = """
+        update tasks
+        set task = '{}'
+        where id = {};
+        """.format(
+            task,
+            id
+        )
 
-        query = """
-                delete from tasks
-                where id = {};
-                """.format(
-                    id
-                )
+    cursor.execute(query)
+    cxn.commit()
 
-        cursor.execute(query)
-        cxn.commit()
+@todo.command(help = 'USAGE: todo days [id] [days]')
+@click.argument('id', required=True)
+@click.argument('days', required=True)
+def days(id, days):
+    cxn = get_cxn()
+    cursor = cxn.cursor()
+    query = """
+            update tasks
+            set finish_by = date_add(current_date, interval {} day)
+            where id = {};
+            """.format(
+                days,
+                id
+            )
 
-    elif args[1] == 'edit':
-        id = args[2]
-        task = args[3]
+    cursor.execute(query)
+    cxn.commit()
 
-        query = """
-                update tasks
-                set task = '{}'
-                where id = {};
-                """.format(
-                    task,
-                    id
-                )
+@todo.command(help = 'USAGE: todo complete [id]')
+@click.argument('id', required=True)
+def complete(id):
+    cxn = get_cxn()
+    cursor = cxn.cursor()
+    query = """
+            update tasks
+            set completed = true
+            where id = {};
+            """.format(
+                id
+            )
 
-        cursor.execute(query)
-        cxn.commit()
+    cursor.execute(query)
+    cxn.commit()
 
-    elif args[1] == 'days':
-        id = args[2]
-        days = args[3]
+@todo.command(help = 'USAGE: todo incomplete [id]')
+@click.argument('id', required=True)
+def incomplete(id):
+    cxn = get_cxn()
+    cursor = cxn.cursor()
+    query = """
+            update tasks
+            set completed = false
+            where id = {};
+            """.format(
+                id
+            )
 
-        query = """
-                update tasks
-                set finish_by = date_add(current_date, interval {} day)
-                where id = {};
-                """.format(
-                    days,
-                    id
-                )
-
-        cursor.execute(query)
-        cxn.commit()
-
-    elif args[1] == 'complete':
-        id = args[2]
-
-        query = """
-                update tasks
-                set completed = true
-                where id = {};
-                """.format(
-                    id
-                )
-
-        cursor.execute(query)
-        cxn.commit()
-
-    elif args[1] == 'incomplete':
-        id = args[2]
-
-        query = """
-                update tasks
-                set completed = false
-                where id = {};
-                """.format(
-                    id
-                )
-
-        cursor.execute(query)
-        cxn.commit()
-    
-    elif args[1] == 'help':
-        welcome()
-        help()
-
-    cxn.close()
+    cursor.execute(query)
+    cxn.commit()
 
 if __name__ == '__main__':
-    main()
+    todo()
