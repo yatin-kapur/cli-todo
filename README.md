@@ -23,6 +23,3 @@ $ chmod u+x update.sh; bash update.sh
 Just run `todo --help`, it's super easy to work with
 
 ![example](example.png)
-
-### Pending
-Error handling.
