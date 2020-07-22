@@ -72,6 +72,13 @@ def welcome():
 def clear():
     os.system('clear')
 
+def execute_query(query):
+    cxn = get_cxn()
+    cursor = cxn.cursor()
+
+    cursor.execute(query)
+    cxn.commit()
+
 def show(query):
     clear()
     welcome()
@@ -126,9 +133,6 @@ def all(n):
 @click.argument('task', required=True)
 @click.argument('days', required=True)
 def add(task, days):
-    cxn = get_cxn()
-    cursor = cxn.cursor()
-
     query = """
         insert into 
         tasks (task, finish_by, completed) 
@@ -138,14 +142,11 @@ def add(task, days):
             days
         )
 
-    cursor.execute(query)
-    cxn.commit()
+    execute_query(query)
 
 @todo.command(help = 'USAGE: todo delete [id]')
 @click.argument('id', required=True)
 def delete(id):
-    cxn = get_cxn()
-    cursor = cxn.cursor()
     query = """
             delete from tasks
             where id = {};
@@ -153,15 +154,12 @@ def delete(id):
                 id
             )
 
-    cursor.execute(query)
-    cxn.commit()
+    execute_query(query)
 
 @todo.command(help = 'USAGE: todo edit [id] "[task]"')
 @click.argument('task', required=True)
 @click.argument('id', required=True)
 def edit(task, id):
-    cxn = get_cxn()
-    cursor = cxn.cursor()
     query = """
         update tasks
         set task = '{}'
@@ -171,15 +169,12 @@ def edit(task, id):
             id
         )
 
-    cursor.execute(query)
-    cxn.commit()
+    execute_query(query)
 
 @todo.command(help = 'USAGE: todo days [id] [days]')
 @click.argument('id', required=True)
 @click.argument('days', required=True)
 def days(id, days):
-    cxn = get_cxn()
-    cursor = cxn.cursor()
     query = """
             update tasks
             set finish_by = date_add(current_date, interval {} day)
@@ -189,14 +184,11 @@ def days(id, days):
                 id
             )
 
-    cursor.execute(query)
-    cxn.commit()
+    execute_query(query)
 
 @todo.command(help = 'USAGE: todo complete [id]')
 @click.argument('id', required=True)
 def complete(id):
-    cxn = get_cxn()
-    cursor = cxn.cursor()
     query = """
             update tasks
             set completed = true
@@ -205,14 +197,11 @@ def complete(id):
                 id
             )
 
-    cursor.execute(query)
-    cxn.commit()
+    execute_query(query)
 
 @todo.command(help = 'USAGE: todo incomplete [id]')
 @click.argument('id', required=True)
 def incomplete(id):
-    cxn = get_cxn()
-    cursor = cxn.cursor()
     query = """
             update tasks
             set completed = false
@@ -220,9 +209,8 @@ def incomplete(id):
             """.format(
                 id
             )
-
-    cursor.execute(query)
-    cxn.commit()
+            
+    execute_query(query)
 
 if __name__ == '__main__':
     todo()
