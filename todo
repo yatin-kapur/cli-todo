@@ -157,9 +157,9 @@ def delete(id):
     execute_query(query)
 
 @todo.command(help = 'USAGE: todo edit [id] "[task]"')
-@click.argument('task', required=True)
 @click.argument('id', required=True)
-def edit(task, id):
+@click.argument('task', required=True)
+def edit(id, task):
     query = """
         update tasks
         set task = '{}'
