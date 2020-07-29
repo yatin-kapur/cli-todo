@@ -1,22 +1,22 @@
-# TODO
+# CLI-TODO
 
 ## Setup
 1. Run this command to create `todo` database and make the `tasks` table.
 
 ```
-$ mysql < initialize_db.sql
+mysql < initialize_db.sql
 ```
 
-2. Add cronjob to update task dates after date ticks over, you might have to change permissions allowed to your cron depending on OS.
+2. Add cron job to update task dates after date ticks over, you might have to change permissions allowed to your cron depending on OS.
 
 ```
 0 0 * * * /usr/local/bin/mysql todo < [mypathtoproject]todo/update_date.sql
 ```
 
-3. This scripts copies the `todo` file into `/usr/local/bin` so it can be used as a cli command.
+3. `update.sh` copies the `todo` file into `/usr/local/bin` so it can be used as a CLI command.
 
 ```
-$ chmod u+x update.sh; bash update.sh
+chmod u+x update.sh; bash update.sh
 ```
 
 ## How to Use
